@@ -1,0 +1,9 @@
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.lock.hcl
+
+# OS junk
+.DS_Store
+Thumbs.db
