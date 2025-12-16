@@ -96,10 +96,57 @@ This pattern mirrors how autoscaling is implemented and validated in production 
 
 ---
 
-## Next Steps
+## Ingress Controller & External Access Proof
 
-- Ingress (ALB-based external access)
-- TLS with cert-manager
-- Observability (Prometheus / Grafana)
-- CI/CD integration
+This project uses **NGINX Ingress Controller** deployed on Amazon EKS to expose services externally via an AWS-managed Load Balancer.
+
+### Architecture Overview
+- NGINX Ingress Controller running in `ingress-nginx` namespace
+- AWS ELB automatically provisioned by Kubernetes Service (LoadBalancer)
+- Application traffic routed via Kubernetes Ingress resources
+
+---
+
+### 1. Ingress Resource Creation
+Ingress resource successfully created for the application:
+
+![Ingress Resource](docs/screenshots/ingress/01-ingress-resource.png)
+
+---
+
+### 2. AWS Load Balancer Provisioned
+The ingress controller automatically created an AWS Elastic Load Balancer:
+
+![AWS Load Balancer](docs/screenshots/ingress/02-ingress-loadbalancer.png)
+
+---
+
+### 3. External Access Validation (curl)
+External access validated using the ELB DNS endpoint:
+
+![Curl Success](docs/screenshots/ingress/03-ingress-curl-success.png)
+
+HTTP 200 response confirms successful routing through:
+AWS ELB → NGINX Ingress → Kubernetes Service → Pod
+
+---
+
+### 4. Browser Access Confirmation
+Application successfully accessed via browser using the ELB DNS:
+
+![Browser Access](docs/screenshots/ingress/04-ingress-browser.png)
+
+---
+
+### Outcome
+- External traffic securely routed into the EKS cluster
+- Ingress controller fully operational
+- AWS-managed load balancing confirmed
+- Production-ready ingress architecture validated
+
+
+
+
+
+
 
