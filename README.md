@@ -2,7 +2,7 @@
 
 Production-grade Cloud & DevOps platform built on AWS using Terraform and Kubernetes.
 
-This repository demonstrates real-world infrastructure automation, Kubernetes operations, and scaling behavior — not tutorials.
+This repository demonstrates real-world infrastructure automation, Kubernetes operations, and scaling behavior.
 
 ---
 
