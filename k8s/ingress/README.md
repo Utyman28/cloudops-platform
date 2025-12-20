@@ -61,3 +61,57 @@ helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
   -n ingress-nginx --create-namespace \
   -f k8s/ingress/ingress-nginx-values.yaml
 
+### 2) Apply the application Ingress
+```bash
+kubectl apply -f k8s/ingress/hpa-demo-ingress.yaml
+
+### 3) Verify
+Confirm the ingress-nginx Service received an AWS NLB:
+```bash
+kubectl -n ingress-nginx get svc ingress-nginx-controller -o wide
+
+Confirm the Ingress resource:
+```bash
+kubectl -n apps get ingress hpa-demo -o wide
+kubectl -n apps describe ingress hpa-demo
+
+External connectivity checks:
+```bash
+curl -I http://app.utieyincloud.com
+curl -vk https://app.utieyincloud.com
+
+Expected:
+
+-HTTP responds successfully
+-HTTPS completes a valid TLS handshake using the ACM certificate
+
+## Design notes (why this approach)
+
+- TLS is terminated at the AWS NLB, not inside Kubernetes → No TLS private keys or cert secrets stored in the cluster.
+- Internal traffic remains HTTP → Standard practice inside a trusted VPC boundary.
+- NGINX handles routing, AWS handles transport security → Clear separation of responsibilities and simpler operations.
+
+This mirrors common production patterns used in managed Kubernetes platforms.
+
+## Cleanup (avoid ongoing cost)
+
+### 1) Delete the application Ingress
+```bash
+kubectl delete -f k8s/ingress/hpa-demo-ingress.yaml
+
+### 2) Uninstall ingress-nginx (removes the LoadBalancer Service)
+```bash
+helm uninstall ingress-nginx -n ingress-nginx
+
+### 3) Confirm no LoadBalancer Services remain
+```bash
+kubectl get svc -A | grep LoadBalancer || echo "No LoadBalancer services found"
+
+### 4) Optional: delete namespace
+```bash
+kubectl delete ns ingress-nginx
+
+### 5) Full environment teardown (if done with EKS)
+```bash
+-Delete EKS node group(s)
+-Delete EKS cluster
