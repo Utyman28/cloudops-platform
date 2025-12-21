@@ -115,3 +115,32 @@ kubectl delete ns ingress-nginx
 ```bash
 -Delete EKS node group(s)
 -Delete EKS cluster
+
+## Failure scenarios
+
+- **NGINX pod failure**
+  - Kubernetes restarts the pod
+  - NLB continues forwarding traffic to healthy targets
+
+- **Ingress controller failure**
+  - Service remains, but traffic drops until controller recovers
+  - Demonstrates need for multiple replicas (future improvement)
+
+- **ACM certificate issue**
+  - TLS handshake fails at NLB
+  - No impact to in-cluster traffic
+
+## Rebuild / Demo
+
+This module can be recreated end-to-end:
+
+1. Provision EKS and networking using Terraform
+2. Install ingress-nginx via Helm
+3. Apply ingress manifest
+4. Validate:
+   - HTTPS via ACM + NLB
+   - HTTP fallback
+   - In-cluster routing
+
+Designed for live demos.
+
