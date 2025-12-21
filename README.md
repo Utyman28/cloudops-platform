@@ -1,18 +1,56 @@
 # CloudOps Platform
 
-Production-grade Cloud & DevOps platform built on AWS using Terraform and Kubernetes.
+A production-grade **Cloud & DevOps platform** built on **AWS**, using **Terraform** for infrastructure provisioning and **Kubernetes (EKS)** for application orchestration.
 
-This repository demonstrates real-world infrastructure automation, Kubernetes operations, and scaling behavior.
+This repository demonstrates **real-world infrastructure automation**, **Kubernetes operations**, and **validated scaling behavior** under load — with full teardown and cost-control discipline.
+
+---
+
+## What this project proves 
+
+This project demonstrates the ability to:
+
+- Design and provision AWS infrastructure using **modular Terraform**
+- Operate a production-style **Amazon EKS** cluster
+- Expose applications securely using **NGINX Ingress + AWS NLB**
+- Validate **Horizontal Pod Autoscaler (HPA)** behavior under real load
+- Reason about **failure scenarios, observability, and cost control**
+- Rebuild and tear down environments safely and repeatably
+
+This mirrors how Cloud / DevOps engineers work in real production environments.
 
 ---
 
 ## Architecture Overview
 
+### Core technologies
+
 - **Cloud**: AWS
-- **IaC**: Terraform (modular VPC + EKS)
-- **Kubernetes**: Amazon EKS
+- **Infrastructure as Code**: Terraform (modular VPC + EKS)
+- **Container Orchestration**: Amazon EKS
+- **Ingress & Traffic Management**: NGINX Ingress Controller
 - **Autoscaling**: Horizontal Pod Autoscaler (HPA)
 - **Observability**: Metrics Server
+
+---
+
+## High-level traffic flow (Ingress)
+
+Client
+↓
+Route 53 (app.utieyincloud.com)
+↓
+AWS Network Load Balancer (TLS 443 / HTTP 80)
+↓ (TLS terminates at NLB via ACM)
+NGINX Ingress Controller (EKS)
+↓
+Kubernetes Service
+↓
+Application Pod
+
+
+Ingress is documented in detail here:  
+  `k8s/ingress/README.md`
 
 ---
 
@@ -20,133 +58,136 @@ This repository demonstrates real-world infrastructure automation, Kubernetes op
 
 This section demonstrates **real, observed Horizontal Pod Autoscaling behavior** on a live Amazon EKS cluster.
 
+Autoscaling behavior was **intentionally triggered, observed, and validated**
+
+---
+
 ### What was implemented
 
 - Deployed a CPU-bound application (`hpa-demo`)
-- Configured resource requests & limits
-- Installed and patched **Metrics Server**
+- Configured **CPU requests and limits** correctly
+- Installed and patched **Metrics Server** for EKS compatibility
 - Created an **HPA** with:
-  - Min replicas: `1`
-  - Max replicas: `5`
+  - Minimum replicas: `1`
+  - Maximum replicas: `5`
   - Target CPU utilization: `50%`
-- Generated sustained load using a BusyBox load generator
-- Observed **scale-up and scale-down in real time**
+- Generated sustained CPU load using a BusyBox-based load generator
+- Observed **scale-up, stabilization, and scale-down** in real time
 
 ---
 
 ### Scale-Up Evidence
 
-- CPU usage exceeded the 50% target
+- CPU utilization exceeded the 50% threshold
 - HPA increased replicas from **1 → 5**
-- New pods were scheduled and became `Running`
+- New pods were scheduled and reached `Running` state
 
-📸 Evidence:
-- `01-hpa-scale-up.png`
-- `02-hpa-metrics.png`
+Picture Evidence:
+- `docs/images/hpa/01-hpa-scale-up.png`
+- `docs/images/hpa/02-hpa-metrics.png`
 
 ---
 
 ### Stabilization Phase
 
-- CPU remained high
-- Replica count stabilized at max pods
+- CPU remained consistently high
+- Replica count stabilized at the maximum configured value
 
-📸 Evidence:
-- `03-hpa-stabilization.png`
+Picture Evidence:
+- `docs/images/hpa/03-hpa-stabilization.png`
 
 ---
 
 ### Scale-Down Evidence
 
-- Load generator stopped
-- CPU usage dropped below threshold
+- Load generator was stopped
+- CPU utilization dropped below target
 - HPA gradually reduced replicas from **5 → 1**
-- Pods were terminated gracefully
+- Pods were terminated **gracefully**, without disruption
 
-📸 Evidence:
-- `04-hpa-scale-down-start.png`
-- `05-hpa-scale-down-cpu.png`
-- `08-hpa-scale-down-live.png`
-- `10-hpa-scale-down-complete.png`
+Picture Evidence:
+- `docs/images/hpa/04-hpa-scale-down-start.png`
+- `docs/images/hpa/05-hpa-scale-down-cpu.png`
+- `docs/images/hpa/08-hpa-scale-down-live.png`
+- `docs/images/hpa/10-hpa-scale-down-complete.png`
 
 ---
 
 ### Final State
 
 - Cluster returned to minimum replica count
-- No pod crashes or errors
-- HPA events confirm correct behavior
+- No pod crashes or instability observed
+- HPA events confirm correct autoscaling decisions
 
-📸 Evidence:
-- `11-hpa-final-event-trail.png`
+Picture Evidence:
+- `docs/images/hpa/11-hpa-final-event-trail.png`
 
 ---
 
 ## Why this matters
 
-This implementation demonstrates real Horizontal Pod Autoscaler behavior on a live Amazon EKS cluster.
+This implementation validates **how Kubernetes autoscaling behaves in production**, not just in theory.
 
-It validates:
-- Correct CPU resource requests and limits
-- Proper Metrics Server configuration on EKS
+It demonstrates:
+
+- Correct sizing of CPU requests and limits
+- Proper Metrics Server configuration on Amazon EKS
 - Autoscaling decisions made dynamically by Kubernetes
-- Safe and gradual scale-down without pod disruption
+- Safe and predictable scale-down behavior without service disruption
 
-This pattern mirrors how autoscaling is implemented and validated in production Kubernetes environments.
-
----
-
-## Ingress Controller & External Access Proof
-
-This project uses **NGINX Ingress Controller** deployed on Amazon EKS to expose services externally via an AWS-managed Load Balancer.
-
-### Architecture Overview
-- NGINX Ingress Controller running in `ingress-nginx` namespace
-- AWS ELB automatically provisioned by Kubernetes Service (LoadBalancer)
-- Application traffic routed via Kubernetes Ingress resources
+This pattern closely mirrors how autoscaling is **tested, verified, and trusted** in real production Kubernetes platforms.
 
 ---
 
-### 1. Ingress Resource Creation
-Ingress resource successfully created for the application:
+## Infrastructure provisioning (Terraform)
 
-![Ingress Resource](docs/screenshots/ingress/01-ingress-resource.png)
+All AWS infrastructure is provisioned using Terraform with a clear separation of concerns:
 
----
+- **Reusable modules**: `terraform/modules/`
+  - VPC
+  - EKS
+- **Environment wiring**: `terraform/environments/dev/`
 
-### 2. AWS Load Balancer Provisioned
-The ingress controller automatically created an AWS Elastic Load Balancer:
-
-![AWS Load Balancer](docs/screenshots/ingress/02-ingress-loadbalancer.png)
-
----
-
-### 3. External Access Validation (curl)
-External access validated using the ELB DNS endpoint:
-
-![Curl Success](docs/screenshots/ingress/03-ingress-curl-success.png)
-
-HTTP 200 response confirms successful routing through:
-AWS ELB → NGINX Ingress → Kubernetes Service → Pod
+Terraform environment documentation:  
+ `terraform/environments/dev/README.md`
 
 ---
 
-### 4. Browser Access Confirmation
-Application successfully accessed via browser using the ELB DNS:
+## Cost control & teardown discipline
 
-![Browser Access](docs/screenshots/ingress/04-ingress-browser.png)
+This project was designed with **cost awareness** in mind.
+
+Before ending any session:
+
+- Ingress resources are deleted
+- ingress-nginx is uninstalled (triggering NLB deletion)
+- EKS node groups and clusters are scaled down or destroyed
+- Terraform state is cleanly destroyed when finished
+
+This reflects **real operational hygiene** expected in production cloud environments.
 
 ---
 
-### Outcome
-- External traffic securely routed into the EKS cluster
-- Ingress controller fully operational
-- AWS-managed load balancing confirmed
-- Production-ready ingress architecture validated
+## Rebuild / Live Demo Capability
 
+This environment can be fully rebuilt and demonstrated live:
 
+1. Provision infrastructure with Terraform
+2. Deploy ingress controller and application
+3. Validate external access (HTTP / HTTPS)
+4. Trigger HPA scale-up and scale-down
+5. Tear everything down safely
 
+This ensures the project is **reproducible**, not a one-off setup.
 
+---
 
+## Status
 
+- Architecture validated  
+- Autoscaling behavior proven  
+- External access secured via Ingress  
+- Cost-control teardown verified  
+
+This repository represents a **production-style Cloud & DevOps platform**.
 
