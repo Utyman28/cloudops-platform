@@ -23,6 +23,11 @@ This mirrors how Cloud / DevOps engineers work in real production environments.
 
 ## Architecture Overview
 
+## Live Demo (5 minutes)
+
+To demo this project live, I rebuild the environment with Terraform (VPC + EKS), deploy the Kubernetes workloads (HPA demo + ingress-nginx), and then prove behavior with real evidence: (1) autoscaling—start a CPU load generator and watch `kubectl get hpa,pods -w` scale from 1→5 and then back down after load stops, and (2) external access—verify DNS → NLB (ACM TLS termination) → NGINX Ingress → Service → Pods by curling `https://app.utieyincloud.com` and confirming `200 OK`. After the demo, I tear everything down (Ingress deleted, ingress-nginx uninstalled, and EKS/nodegroup removed) to prevent AWS charges.
+
+
 ## Architecture diagrams
 
 - Ingress (NLB + ACM TLS → NGINX Ingress → Service → Pods): [`docs/architecture`](./docs/architecture/)
