@@ -23,6 +23,16 @@ This mirrors how Cloud / DevOps engineers work in real production environments.
 
 ## Architecture Overview
 
+## Architecture diagrams
+
+- Ingress (NLB + ACM TLS → NGINX Ingress → Service → Pods): [`docs/architecture`](./docs/architecture/)
+
+## Modules
+
+- Kubernetes HPA autoscaling proof: see screenshots in `docs/images/hpa`
+- Ingress (NGINX) + TLS termination at NLB (ACM): [`k8s/ingress`](./k8s/ingress/)
+- Terraform environment wiring (dev): [`terraform/environments/dev`](./terraform/environments/dev/)
+
 ### Core technologies
 
 - **Cloud**: AWS
