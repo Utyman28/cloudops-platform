@@ -1,3 +1,19 @@
+## Executive Summary (60 seconds)
+
+This project demonstrates how I design, build, operate, and safely tear down
+a production-style Kubernetes platform on AWS.
+
+In a live demo, I:
+- Provision AWS infrastructure with Terraform (VPC + EKS)
+- Deploy a CPU-bound application and prove Kubernetes HPA behavior under load
+- Expose the app securely using NGINX Ingress behind an AWS NLB with ACM TLS
+- Validate HTTPS access end-to-end
+- Tear everything down to prevent unnecessary cloud cost
+
+The focus is not just deployment, but **operability, validation, and discipline** —
+the core responsibilities of a senior Cloud / DevOps engineer.
+
+
 # CloudOps Platform
 
 A production-grade **Cloud & DevOps platform** built on **AWS**, using **Terraform** for infrastructure provisioning and **Kubernetes (EKS)** for application orchestration.
@@ -22,6 +38,8 @@ This mirrors how Cloud / DevOps engineers work in real production environments.
 ---
 
 ## Architecture Overview
+
+The platform consists of modular AWS infrastructure provisioned with Terraform and a Kubernetes workload deployed on Amazon EKS.
 
 ## Live Demo (5 minutes)
 
@@ -55,7 +73,7 @@ Client
 ↓
 Route 53 (app.utieyincloud.com)
 ↓
-AWS Network Load Balancer (TLS 443 / HTTP 80)
+AWS Network Load Balancer (TLS 443)
 ↓ (TLS terminates at NLB via ACM)
 NGINX Ingress Controller (EKS)
 ↓
