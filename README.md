@@ -1,3 +1,13 @@
+## Demo Modes
+
+This project supports two ingress designs:
+
+- **Primary (current)**: NLB + ACM TLS termination (L4)
+- **Future variant**: ALB + L7 routing (documented separately)
+
+This repository intentionally demonstrates the NLB-first model,
+commonly used for performance, cost, and simplicity in production.
+
 ## Executive Summary (60 seconds)
 
 This project demonstrates how I design, build, operate, and safely tear down
