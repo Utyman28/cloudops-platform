@@ -1,34 +1,55 @@
-# Ingress (NGINX) + TLS Termination on AWS NLB (ACM)
+# Ingress (NGINX) with TLS Termination on AWS NLB (ACM)
 
-Expose a Kubernetes Service via **NGINX Ingress** while terminating **TLS at an AWS Network Load Balancer (NLB)** using an **ACM certificate**.
+This module exposes a Kubernetes Service via **NGINX Ingress** while terminating **TLS at an AWS Network Load Balancer (NLB)** using an **ACM certificate**.
 
-This module publishes the `apps/hpa-demo` service and supports:
-- **External HTTP** access (port **80**)
-- **External HTTPS** access (port **443**) with **TLS termination at the NLB (ACM)**
-- **In-cluster routing** from NGINX → Service over HTTP (port **80**)
+The design intentionally uses **NLB (Layer 4)** instead of ALB to demonstrate a clean separation of concerns between:
+- **Cloud networking / TLS termination**
+- **Kubernetes ingress routing**
 
 ---
 
-## Cost control checklist
+## What this module demonstrates
 
-Before you finish the session, confirm the items below to avoid surprise charges:
-- [ ] Delete the **Ingress** (`kubectl delete -f ...`)
-- [ ] Uninstall **ingress-nginx** (`helm uninstall ...`)
-- [ ] Confirm the **LoadBalancer Service** is gone (NLB deletion follows)
-- [ ] If you’re done with the environment: scale down / delete EKS node group (or cluster) per your project plan
+- External access to Kubernetes workloads using **NGINX Ingress**
+- **TLS termination at AWS NLB** using ACM (no certs stored in cluster)
+- Clear understanding of **L4 vs L7 responsibilities**
+- In-cluster routing over **plain HTTP** after TLS is terminated
+- Cost-aware lifecycle management (install, validate, teardown)
 
-> NLB + EKS are the typical cost drivers. Don’t leave them running unintentionally.
+This mirrors real production patterns used in AWS-hosted Kubernetes platforms.
 
 ---
 
 ## Architecture
 
-Traffic flow:
+### High-level traffic flow
 
-- Client → Route 53 (`app.utieyincloud.com`) → **AWS NLB** (TLS 443 / TCP 80)
-- TLS terminates at the **NLB** (ACM certificate)
-- NLB forwards traffic to the **ingress-nginx controller Service**
-- NGINX routes to `hpa-demo` Service in the `apps` namespace
+Client
+↓
+Route 53 (app.utieyincloud.com)
+↓
+AWS Network Load Balancer (TCP 443)
+↓ (TLS terminates at NLB using ACM)
+NGINX Ingress Controller (EKS)
+↓
+Kubernetes Service
+↓
+Application Pods (hpa-demo
+
+### Why NLB (and not ALB)?
+
+- **NLB (Layer 4)** is responsible only for transport and TLS
+- **NGINX Ingress (Layer 7)** handles HTTP routing and Kubernetes semantics
+- No dependency on AWS-specific Ingress controllers
+- Avoids mixing cloud-native L7 logic with Kubernetes routing
+- Easier to reason about, debug, and operate
+
+> An ALB-based design is valid, but intentionally **out of scope** for this project.
+> This repo demonstrates depth with NLB first, not breadth.
+
+---
+
+## External behavior (validated)
 
 ### Evidence (screenshots)
 
@@ -38,21 +59,35 @@ Traffic flow:
 **2) External HTTP**  
 ![External HTTP](../../docs/images/ingress/02-external-http.png)
 
-**3) In-cluster routing**  
+**3) In-cluster routing (NGINX → Service → Pods)**  
 ![In-cluster routing](../../docs/images/ingress/03-in-cluster-routing.png)
 
----
-
-## Repository files
-
-- `k8s/ingress/ingress-nginx-values.yaml` — Helm values for ingress-nginx (NLB + ACM TLS termination config)
-- `k8s/ingress/hpa-demo-ingress.yaml` — Ingress resource for `app.utieyincloud.com`
+> HTTPS is the primary access path.  
+> HTTP visibility is intentional for demonstration and can be restricted further in production.
 
 ---
 
-## Deploy
+## Kubernetes resources
 
-### 1) Install ingress-nginx with Helm
+- `ingress-nginx` installed via Helm
+- Service type: `LoadBalancer` (AWS NLB)
+- TLS handled entirely by AWS (ACM)
+- NGINX forwards traffic internally over HTTP
+
+### Files
+
+- `k8s/ingress/ingress-nginx-values.yaml`  
+  Helm values configuring NLB + ACM TLS termination
+
+- `k8s/apps/hpa-demo-ingress.yaml`  
+  Ingress resource routing `app.utieyincloud.com` to the `hpa-demo` Service
+
+---
+
+## Deployment
+
+### Install ingress-nginx
+
 ```bash
 helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
@@ -61,86 +96,38 @@ helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
   -n ingress-nginx --create-namespace \
   -f k8s/ingress/ingress-nginx-values.yaml
 
-### 2) Apply the application Ingress
+### Apply application ingress
 ```bash
-kubectl apply -f k8s/ingress/hpa-demo-ingress.yaml
+kubectl apply -f k8s/apps/hpa-demo-ingress.yaml
 
-### 3) Verify
-Confirm the ingress-nginx Service received an AWS NLB:
+### Validation
 ```bash
 kubectl -n ingress-nginx get svc ingress-nginx-controller -o wide
+kubectl -n apps get ingress hpa-demo
 
-Confirm the Ingress resource:
-```bash
-kubectl -n apps get ingress hpa-demo -o wide
-kubectl -n apps describe ingress hpa-demo
-
-External connectivity checks:
-```bash
-curl -I http://app.utieyincloud.com
-curl -vk https://app.utieyincloud.com
+curl -Ik https://app.utieyincloud.com
 
 Expected:
+NLB hostname assigned
+HTTPS returns 200 OK
+Traffic routes correctly through NGINX to pods
 
--HTTP responds successfully
--HTTPS completes a valid TLS handshake using the ACM certificate
+## Cost control & teardown
 
-## Design notes (why this approach)
-
-- TLS is terminated at the AWS NLB, not inside Kubernetes → No TLS private keys or cert secrets stored in the cluster.
-- Internal traffic remains HTTP → Standard practice inside a trusted VPC boundary.
-- NGINX handles routing, AWS handles transport security → Clear separation of responsibilities and simpler operations.
-
-This mirrors common production patterns used in managed Kubernetes platforms.
-
-## Cleanup (avoid ongoing cost)
-
-### 1) Delete the application Ingress
+To avoid surprise AWS charges:
 ```bash
-kubectl delete -f k8s/ingress/hpa-demo-ingress.yaml
-
-### 2) Uninstall ingress-nginx (removes the LoadBalancer Service)
-```bash
+kubectl delete -f k8s/apps/hpa-demo-ingress.yaml
 helm uninstall ingress-nginx -n ingress-nginx
+This triggers deletion of the AWS NLB. 
 
-### 3) Confirm no LoadBalancer Services remain
-```bash
-kubectl get svc -A | grep LoadBalancer || echo "No LoadBalancer services found"
+Scale down or delete the EKS node group.
+Or run terraform destroy from terraform/environments/dev
 
-### 4) Optional: delete namespace
-```bash
-kubectl delete ns ingress-nginx
+## Why this matters
 
-### 5) Full environment teardown (if done with EKS)
-```bash
--Delete EKS node group(s)
--Delete EKS cluster
-
-## Failure scenarios
-
-- **NGINX pod failure**
-  - Kubernetes restarts the pod
-  - NLB continues forwarding traffic to healthy targets
-
-- **Ingress controller failure**
-  - Service remains, but traffic drops until controller recovers
-  - Demonstrates need for multiple replicas (future improvement)
-
-- **ACM certificate issue**
-  - TLS handshake fails at NLB
-  - No impact to in-cluster traffic
-
-## Rebuild / Demo
-
-This module can be recreated end-to-end:
-
-1. Provision EKS and networking using Terraform
-2. Install ingress-nginx via Helm
-3. Apply ingress manifest
-4. Validate:
-   - HTTPS via ACM + NLB
-   - HTTP fallback
-   - In-cluster routing
-
-Designed for live demos.
+This ingress design demonstrates:
+Clear understanding of AWS networking primitives
+Correct TLS boundary placement
+Kubernetes-native routing practices
+Operational discipline (validation + teardown)
 
