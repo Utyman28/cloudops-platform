@@ -68,6 +68,10 @@ To demo this project live, I rebuild the environment with Terraform (VPC + EKS),
 
 - Ingress (NLB + ACM TLS → NGINX Ingress → Service → Pods): [`docs/architecture`](./docs/architecture/)
 
+**Design decisions and trade-offs:**  
+See [`docs/design-rationale.md`](./docs/design-rationale.md)
+
+
 ## Modules
 
 - Kubernetes HPA autoscaling proof: see screenshots in `docs/images/hpa`
