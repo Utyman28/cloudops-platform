@@ -1,38 +1,23 @@
-## Demo Modes
-
-This project supports two ingress designs:
-
-- **Primary (current)**: NLB + ACM TLS termination (L4)
-- **Future variant**: ALB + L7 routing (documented separately)
-
-This repository intentionally demonstrates the NLB-first model,
-commonly used for performance, cost, and simplicity in production.
-
 ## Executive Summary (60 seconds)
 
-This project demonstrates how I design, build, operate, and safely tear down
-a production-style Kubernetes platform on AWS.
+This project demonstrates how I design, operate, validate, and safely tear down a production-style Kubernetes platform on AWS.
 
 In a live demo, I:
-- Provision AWS infrastructure with Terraform (VPC + EKS)
-- Deploy a CPU-bound application and prove Kubernetes HPA behavior under load
-- Expose the app securely using NGINX Ingress behind an AWS NLB with ACM TLS
-- Validate HTTPS access end-to-end
-- Tear everything down to prevent unnecessary cloud cost
+- Provision AWS infrastructure using Terraform (VPC + EKS)
+- Deploy a CPU-bound application and validate Horizontal Pod Autoscaling under real load
+- Expose the application securely using NGINX Ingress behind an AWS NLB with ACM TLS
+- Prove HTTPS-only external access with direct command-line validation
+- Tear down all infrastructure cleanly to prevent unnecessary cloud cost
 
-The focus is not just deployment, but **operability, validation, and discipline** —
-the core responsibilities of a senior Cloud / DevOps engineer.
-
+The emphasis is not just deployment, but **operability, validation, and discipline** —the core responsibilities of a senior Cloud / DevOps engineer.
 
 # CloudOps Platform
 
-A production-grade **Cloud & DevOps platform** built on **AWS**, using **Terraform** for infrastructure provisioning and **Kubernetes (EKS)** for application orchestration.
+A production-grade Cloud & DevOps reference platform on AWS, designed to demonstrate how I design, operate, validate, and safely decommission Kubernetes-based infrastructure in real-world conditions.
 
 This repository demonstrates **real-world infrastructure automation**, **Kubernetes operations**, and **validated scaling behavior** under load — with full teardown and cost-control discipline.
 
----
-
-## What this project proves 
+## What this project proves
 
 This project demonstrates the ability to:
 
@@ -50,6 +35,29 @@ This mirrors how Cloud / DevOps engineers work in real production environments.
 ## Architecture Overview
 
 The platform consists of modular AWS infrastructure provisioned with Terraform and a Kubernetes workload deployed on Amazon EKS.
+
+### Why NLB instead of ALB?
+
+This project intentionally uses an **AWS Network Load Balancer (L4)** instead of an ALB to demonstrate:
+
+- Lower latency and higher throughput at scale
+- Simpler traffic model with TLS terminated at the edge (ACM)
+- Full control over HTTPS-only enforcement without redirects
+- Compatibility with restricted ingress environments (no NGINX server snippets)
+
+This mirrors environments where performance, cost, or security constraints make ALB unsuitable.
+
+
+# Demo Modes
+
+This project supports two ingress designs:
+
+- **Primary (current)**: NLB + ACM TLS termination (L4)
+- **Future variant**: ALB + L7 routing (documented separately)
+
+This repository intentionally demonstrates the NLB-first model,
+commonly used for performance, cost, and simplicity in production.
+
 
 ## Live Demo (5 minutes)
 
@@ -224,6 +232,23 @@ This environment can be fully rebuilt and demonstrated live:
 This ensures the project is **reproducible**, not a one-off setup.
 
 ---
+
+## Failure Scenarios Considered
+
+This project was designed with failure modes in mind, including:
+
+- Load balancer recreation after ingress-nginx reinstall
+- DNS propagation delays after NLB replacement
+- HPA scale-down behavior under fluctuating CPU load
+- Metrics Server compatibility issues on EKS
+- Cost leakage from orphaned load balancers or node groups
+
+Each failure mode was either:
+- Prevented through design, or
+- Observed, validated, and corrected during live testing
+
+This reflects how production systems are operated, not just deployed.
+
 
 ## Status
 
