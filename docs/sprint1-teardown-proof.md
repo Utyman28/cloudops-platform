@@ -27,3 +27,15 @@ aws ec2 describe-network-interfaces --region ca-central-1 \
   --filters Name=tag:Project,Values=cloudops-eks Name=status,Values=in-use \
   --query "NetworkInterfaces[].NetworkInterfaceId" --output table || true
 
+## Cost Control Verification
+
+After teardown, the following checks were performed to ensure zero ongoing cost:
+
+- EKS clusters: none
+- Load balancers (NLB/ALB): none
+- NAT Gateways: deleted
+- ENIs: none in-use
+- Unattached EBS volumes: none
+
+AWS Cost Explorer confirms no ongoing infrastructure charges.
+
