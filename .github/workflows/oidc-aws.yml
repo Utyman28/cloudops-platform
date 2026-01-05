@@ -1,0 +1,28 @@
+name: OIDC AWS Auth Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  auth-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::588738591601:role/github-actions-cloudops-dev
+          aws-region: ca-central-1
+          role-session-name: gha-cloudops-dev
+
+      - name: Verify identity
+        run: aws sts get-caller-identity
+
