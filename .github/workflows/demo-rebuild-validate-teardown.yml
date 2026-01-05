@@ -1,0 +1,41 @@
+name: Demo - Rebuild, Validate, Teardown (OIDC)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  demo:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::588738591601:role/github-actions-cloudops-dev
+          aws-region: ca-central-1
+          role-session-name: gha-demo
+
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh
+
+      - name: Rebuild demo environment
+        run: ./scripts/rebuild-demo.sh
+
+      - name: Validate environment
+        run: ./scripts/validate-env.sh
+
+      # CRITICAL: always teardown even if rebuild/validate fails
+      - name: Teardown (always)
+        if: always()
+        run: ./scripts/teardown.sh
+
