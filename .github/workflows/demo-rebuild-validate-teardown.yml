@@ -39,3 +39,10 @@ jobs:
         if: always()
         run: ./scripts/teardown.sh
 
+
+
+
+# WARNING:
+# This workflow creates real AWS infrastructure and incurs cost.
+# It is intentionally manual (workflow_dispatch) and should be run only for demos.
+
