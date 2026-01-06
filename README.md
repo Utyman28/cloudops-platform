@@ -1,3 +1,5 @@
+# Production-Grade AWS EKS CloudOps Platform
+
 ## Executive Summary (60 seconds)
 
 This project demonstrates how I design, operate, validate, and safely tear down a production-style Kubernetes platform on AWS.
