@@ -11,13 +11,23 @@ In a live demo, I:
 - Prove HTTPS-only external access with direct command-line validation
 - Tear down all infrastructure cleanly to prevent unnecessary cloud cost
 
-The emphasis is not just deployment, but **operability, validation, and discipline** —the core responsibilities of a senior Cloud / DevOps engineer.
+The emphasis is not just deployment, but **operability, validation, and disciplined teardown** —the core responsibilities of a senior Cloud / DevOps engineer.
 
 # CloudOps Platform
 
 A production-grade Cloud & DevOps reference platform on AWS, designed to demonstrate how I design, operate, validate, and safely decommission Kubernetes-based infrastructure in real-world conditions.
 
 This repository demonstrates **real-world infrastructure automation**, **Kubernetes operations**, and **validated scaling behavior** under load — with full teardown and cost-control discipline.
+
+## At a Glance
+
+- **Cloud**: AWS (VPC, EKS, NLB, ACM)
+- **IaC**: Terraform (remote state, locking, modular)
+- **Kubernetes**: EKS, HPA, Metrics Server, NGINX Ingress
+- **CI/CD**: GitHub Actions with OIDC (no secrets)
+- **Security**: HTTPS-only ingress, IAM role assumption
+- **Cost Control**: Manual demos + enforced teardown
+
 
 ## What this project proves
 
@@ -50,7 +60,7 @@ This project intentionally uses an **AWS Network Load Balancer (L4)** instead of
 This mirrors environments where performance, cost, or security constraints make ALB unsuitable.
 
 
-# Demo Modes
+## Demo Modes (Ingress Design)
 
 This project supports two ingress designs:
 
@@ -65,6 +75,18 @@ commonly used for performance, cost, and simplicity in production.
 
 To demo this project live, I rebuild the environment with Terraform (VPC + EKS), deploy the Kubernetes workloads (HPA demo + ingress-nginx), and then prove behavior with real evidence: (1) autoscaling—start a CPU load generator and watch `kubectl get hpa,pods -w` scale from 1→5 and then back down after load stops, and (2) external access—verify DNS → NLB (ACM TLS termination) → NGINX Ingress → Service → Pods by curling `https://app.utieyincloud.com` and confirming `200 OK`. After the demo, I tear everything down (Ingress deleted, ingress-nginx uninstalled, and EKS/nodegroup removed) to prevent AWS charges.
 
+## CI/CD Overview
+
+This repository includes production-style CI/CD pipelines:
+
+- **CI – Terraform Plan (OIDC)**  
+  Automatically validates Terraform formatting, configuration, and execution plans   without creating infrastructure.
+
+- **Demo – Rebuild, Validate, Teardown (OIDC)**                                  
+  Manually triggered end-to-end demo that provisions infrastructure, validates behavior, and always tears down resources to control cost.
+
+All AWS authentication uses **GitHub Actions OpenID Connect (OIDC)**.
+No long-lived AWS access keys or GitHub secrets are stored in this repository.
 
 ## Architecture diagrams
 
@@ -170,6 +192,15 @@ Picture Evidence:
 
 ---
 
+## Observability
+
+Ingress-NGINX exposes Prometheus metrics and they are scraped by kube-prometheus-stack via a ServiceMonitor.
+Traffic is generated against the NLB (with Host header) and visualized in Grafana (Explore) using:
+
+sum(rate(nginx_ingress_controller_requests[1m]))
+
+---
+
 ### Final State
 
 - Cluster returned to minimum replica count
@@ -262,6 +293,7 @@ This reflects how production systems are operated, not just deployed.
 - Autoscaling behavior proven  
 - External access secured via Ingress  
 - Cost-control teardown verified  
+
 
 This repository represents a **production-style Cloud & DevOps platform**.
 
