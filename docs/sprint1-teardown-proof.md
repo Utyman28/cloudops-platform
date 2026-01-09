@@ -39,3 +39,12 @@ After teardown, the following checks were performed to ensure zero ongoing cost:
 
 AWS Cost Explorer confirms no ongoing infrastructure charges.
 
+## Observability Stack Teardown
+
+- EKS cluster, node groups, VPC, subnets, and security groups destroyed
+- No remaining NAT Gateway or Load Balancer resources
+- Cost-safe teardown verified
+
+See:
+- docs/images/validation/terraform-destroy-clean.png
+

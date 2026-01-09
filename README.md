@@ -199,6 +199,19 @@ Traffic is generated against the NLB (with Host header) and visualized in Grafan
 
 sum(rate(nginx_ingress_controller_requests[1m]))
 
+## Observability (Ingress)
+
+Ingress traffic is monitored using Prometheus and visualized in Grafana.
+
+Evidence:
+- HTTPS-only ingress enforced via NLB + ACM
+- Prometheus scraping ingress-nginx metrics
+- Grafana dashboards showing real-time request rate (RPS)
+
+Screenshots:
+- docs/images/observability/grafana-ingress-dashboard-overview.png
+- docs/images/observability/ingress-https-only-proof.png
+
 ---
 
 ### Final State
