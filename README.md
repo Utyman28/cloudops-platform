@@ -3,6 +3,7 @@
 ## Executive Summary (60 seconds)
 
 This project demonstrates how I design, operate, validate, and safely tear down a production-style Kubernetes platform on AWS.
+It Includes a full operator runbook covering rebuild, validation, and teardown.
 
 In a live demo, I:
 - Provision AWS infrastructure using Terraform (VPC + EKS)
@@ -58,6 +59,19 @@ This project intentionally uses an **AWS Network Load Balancer (L4)** instead of
 - Compatibility with restricted ingress environments (no NGINX server snippets)
 
 This mirrors environments where performance, cost, or security constraints make ALB unsuitable.
+
+
+## Operator Runbook
+
+This project includes a production-style **operator runbook** documenting how the platform is:
+
+- Rebuilt from scratch
+- Validated with evidence-oriented checks
+- Safely torn down to prevent cloud cost leakage
+
+The runbook reflects real CloudOps / SRE operational workflows rather than one-off deployment steps.
+
+👉 **Runbook:** [`docs/runbook.md`](docs/runbook.md)
 
 
 ## Demo Modes (Ingress Design)
